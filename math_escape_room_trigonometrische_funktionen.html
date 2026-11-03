@@ -1,0 +1,1018 @@
+<!DOCTYPE html>
+<html lang="de" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CYBER-LOCK // Trigonometrie Escape Room</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        cyber: {
+                            black: '#0a0a0f',
+                            darker: '#10121a',
+                            panel: '#161925',
+                            neonGreen: '#00ff66',
+                            neonCyan: '#00f0ff',
+                            neonRed: '#ff0055',
+                            neonYellow: '#ffcc00',
+                            dimGreen: '#005522',
+                        }
+                    },
+                    fontFamily: {
+                        mono: ['Fira Code', 'Courier New', 'monospace'],
+                    },
+                    animation: {
+                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'glitch': 'glitch 1s infinite',
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome für Cyber-Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts Fira Code -->
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Fira Code', monospace;
+            background-color: #0a0a0f;
+            color: #00f0ff;
+            background-image: 
+                radial-gradient(circle at 50% 50%, rgba(0, 240, 255, 0.05) 0%, transparent 60%),
+                linear-gradient(rgba(0, 255, 102, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 255, 102, 0.03) 1px, transparent 1px);
+            background-size: 100% 100%, 20px 20px, 20px 20px;
+        }
+
+        /* Scanline-Effekt */
+        .scanlines {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none;
+            background: linear-gradient(
+                to bottom,
+                rgba(255,255,255,0),
+                rgba(255,255,255,0) 50%,
+                rgba(0, 0, 0, 0.3) 50%,
+                rgba(0, 0, 0, 0.3)
+            );
+            background-size: 100% 4px;
+            z-index: 50;
+            opacity: 0.6;
+        }
+
+        /* CRT Screen Curved Border Visual */
+        .crt-overlay {
+            box-shadow: inset 0 0 100px rgba(0,0,0,0.8);
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #10121a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #00f0ff;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #00ff66;
+        }
+
+        .neon-glow-cyan {
+            text-shadow: 0 0 8px rgba(0, 240, 255, 0.6), 0 0 20px rgba(0, 240, 255, 0.3);
+        }
+        .neon-glow-green {
+            text-shadow: 0 0 8px rgba(0, 255, 102, 0.6), 0 0 20px rgba(0, 255, 102, 0.3);
+        }
+        .neon-box-cyan {
+            box-shadow: 0 0 15px rgba(0, 240, 255, 0.2), inset 0 0 15px rgba(0, 240, 255, 0.1);
+            border: 1px solid #00f0ff;
+        }
+        .neon-box-green {
+            box-shadow: 0 0 15px rgba(0, 255, 102, 0.2), inset 0 0 15px rgba(0, 255, 102, 0.1);
+            border: 1px solid #00ff66;
+        }
+        .neon-box-red {
+            box-shadow: 0 0 15px rgba(ff, 0, 85, 0.3), inset 0 0 15px rgba(ff, 0, 85, 0.1);
+            border: 1px solid #ff0055;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between crt-overlay overflow-x-hidden select-none">
+    <div class="scanlines"></div>
+
+    <!-- Top Header Bar -->
+    <header class="w-full border-b border-cyber-neonCyan/30 bg-cyber-darker/90 backdrop-blur p-4 sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <i class="fa-solid fa-user-ninja text-cyber-neonGreen text-2xl animate-pulse"></i>
+                <div>
+                    <h1 class="text-xl font-bold text-cyber-neonGreen tracking-wider neon-glow-green">SYSTEM_LOCKDOWN // V3.8</h1>
+                    <p class="text-xs text-cyber-neonCyan/70">INTRUSION DETECTED IN MATH_LAB_09</p>
+                </div>
+            </div>
+
+            <div class="flex items-center space-x-6">
+                <!-- Audio Toggle -->
+                <button id="soundToggleBtn" onclick="toggleAudio()" class="px-3 py-1 text-xs border border-cyber-neonCyan/50 hover:border-cyber-neonCyan rounded bg-cyber-panel flex items-center gap-2 text-cyber-neonCyan transition">
+                    <i id="soundIcon" class="fa-solid fa-volume-xmark"></i>
+                    <span id="soundText">SOUND: OFF</span>
+                </button>
+                
+                <!-- Status Code Display -->
+                <div class="hidden sm:flex items-center space-x-2 bg-cyber-panel px-3 py-1 rounded border border-cyber-neonGreen/30">
+                    <span class="text-xs text-slate-400">GEFUNDENE CODES:</span>
+                    <span id="codeDigit1" class="font-bold text-cyber-neonYellow">?</span>
+                    <span class="text-slate-600">-</span>
+                    <span id="codeDigit2" class="font-bold text-cyber-neonYellow">?</span>
+                    <span class="text-slate-600">-</span>
+                    <span id="codeDigit3" class="font-bold text-cyber-neonYellow">?</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Workspace Container -->
+    <main class="max-w-7xl w-full mx-auto p-4 md:p-6 flex-grow flex flex-col gap-6 relative z-10">
+        
+        <!-- Story Intro Alert Banner -->
+        <div id="storyBanner" class="bg-cyber-panel border-l-4 border-cyber-neonRed p-4 rounded-r-lg shadow-lg relative overflow-hidden">
+            <div class="flex items-start gap-4">
+                <div class="text-cyber-neonRed text-3xl pt-1">
+                    <i class="fa-solid fa-triangle-exclamation animate-bounce"></i>
+                </div>
+                <div class="flex-grow">
+                    <h2 class="text-lg font-bold text-cyber-neonRed uppercase tracking-wide">Warnung: Raum verriegelt!</h2>
+                    <p class="text-sm text-slate-300 mt-1">
+                        Ein bekannter Math-Hacker <span class="text-cyber-neonCyan font-semibold">"Zero-Cool"</span> hat das digitale Türschloss überschrieben. 
+                        Um das Büro zu verlassen, müsst ihr 3 mathematische Sicherheitssperren zur Trigonometrie knacken. Jedes gelöste Rätsel schaltet eine Ziffer für den Haupt-Sicherheitstresor frei!
+                    </p>
+                </div>
+                <button onclick="dismissStory()" class="text-slate-400 hover:text-white text-sm">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Progress Tabs -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <button onclick="switchTab(1)" id="tabBtn1" class="p-3 text-left rounded-lg bg-cyber-panel border border-cyber-neonCyan text-cyber-neonCyan flex items-center justify-between transition hover:bg-cyber-darker">
+                <div>
+                    <div class="text-xs text-slate-400">RÄTSEL 01</div>
+                    <div class="font-bold text-sm">Grad & Bogenmaß</div>
+                </div>
+                <i id="tabIcon1" class="fa-solid fa-lock text-cyber-neonYellow"></i>
+            </button>
+            <button onclick="switchTab(2)" id="tabBtn2" class="p-3 text-left rounded-lg bg-cyber-panel border border-slate-800 text-slate-500 flex items-center justify-between transition hover:bg-cyber-darker">
+                <div>
+                    <div class="text-xs text-slate-400">RÄTSEL 02</div>
+                    <div class="font-bold text-sm">Einheitskreis</div>
+                </div>
+                <i id="tabIcon2" class="fa-solid fa-lock text-slate-600"></i>
+            </button>
+            <button onclick="switchTab(3)" id="tabBtn3" class="p-3 text-left rounded-lg bg-cyber-panel border border-slate-800 text-slate-500 flex items-center justify-between transition hover:bg-cyber-darker">
+                <div>
+                    <div class="text-xs text-slate-400">RÄTSEL 03</div>
+                    <div class="font-bold text-sm">Vorzeichen & Quadranten</div>
+                </div>
+                <i id="tabIcon3" class="fa-solid fa-lock text-slate-600"></i>
+            </button>
+            <button onclick="switchTab(4)" id="tabBtn4" class="p-3 text-left rounded-lg bg-cyber-panel border border-slate-800 text-slate-500 flex items-center justify-between transition hover:bg-cyber-darker">
+                <div>
+                    <div class="text-xs text-slate-400">FINALES TOR</div>
+                    <div class="font-bold text-sm">Türschloss (Terminal)</div>
+                </div>
+                <i id="tabIcon4" class="fa-solid fa-key text-slate-600"></i>
+            </button>
+        </div>
+
+        <!-- Content Panels Container -->
+        <div class="flex-grow flex flex-col">
+            
+            <!-- RÄTSEL 1: Gradmaß <-> Bogenmaß -->
+            <div id="puzzle1" class="cyber-tab-content bg-cyber-panel rounded-xl p-6 border border-cyber-neonCyan/40 neon-box-cyan flex flex-col gap-6">
+                <div class="flex flex-col md:flex-row justify-between md:items-center border-b border-cyber-neonCyan/20 pb-4 gap-2">
+                    <div>
+                        <span class="text-xs bg-cyber-neonCyan/20 text-cyber-neonCyan px-2 py-1 rounded">LEVEL 1 // MATRIX_CONVERT</span>
+                        <h2 class="text-2xl font-bold text-white mt-1">Umrechnung: Gradmaß & Bogenmaß</h2>
+                    </div>
+                    <div class="text-xs text-slate-400 bg-cyber-darker p-2 rounded border border-slate-700">
+                        Formel: <span class="text-cyber-neonGreen">x (rad) = α (°) · π / 180°</span>
+                    </div>
+                </div>
+
+                <p class="text-slate-300 text-sm">
+                    Der Hacker hat die Frequenzen der Steuereinheit verschlüsselt. Ordne den Winkeln im Gradmaß die passenden Werte im Bogenmaß (Bruch mit &pi;) korrekt zu. Wenn alle Paare stimmen, wird <span class="text-cyber-neonYellow font-bold">Ziffer 1</span> extrahiert!
+                </p>
+
+                <!-- Interactive Matching Matrix -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 my-2">
+                    <!-- Left Column: Gradmaß -->
+                    <div class="space-y-3">
+                        <h3 class="text-sm font-bold text-cyber-neonCyan uppercase tracking-wider mb-2">1. Gradmaß (Winkel α)</h3>
+                        <div id="degContainer" class="space-y-2">
+                            <!-- JS Inject Card Elements -->
+                        </div>
+                    </div>
+
+                    <!-- Right Column: Bogenmaß Options -->
+                    <div class="space-y-3">
+                        <h3 class="text-sm font-bold text-cyber-neonGreen uppercase tracking-wider mb-2">2. Bogenmaß (x in rad)</h3>
+                        <div id="radContainer" class="grid grid-cols-2 gap-2">
+                            <!-- JS Inject Card Elements -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Puzzle 1 Feedback & Action -->
+                <div class="flex flex-col sm:flex-row justify-between items-center gap-4 pt-4 border-t border-cyber-neonCyan/20">
+                    <div id="p1Feedback" class="text-sm font-semibold text-slate-400">
+                        Wähle zuerst einen Grad-Wert und klicke danach auf den passenden Bogenmaß-Wert.
+                    </div>
+                    <button id="p1SubmitBtn" onclick="verifyPuzzle1()" class="w-full sm:w-auto px-6 py-3 bg-cyber-neonCyan/20 hover:bg-cyber-neonCyan/40 text-cyber-neonCyan border border-cyber-neonCyan rounded-lg font-bold transition flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-microchip"></i> ZUORDNUNG PRÜFEN
+                    </button>
+                </div>
+            </div>
+
+            <!-- RÄTSEL 2: Einheitskreis (Sinus & Cosinus) -->
+            <div id="puzzle2" class="cyber-tab-content hidden bg-cyber-panel rounded-xl p-6 border border-cyber-neonCyan/40 neon-box-cyan flex flex-col gap-6">
+                <div class="flex flex-col md:flex-row justify-between md:items-center border-b border-cyber-neonCyan/20 pb-4 gap-2">
+                    <div>
+                        <span class="text-xs bg-cyber-neonGreen/20 text-cyber-neonGreen px-2 py-1 rounded">LEVEL 2 // CIRCLE_DECODER</span>
+                        <h2 class="text-2xl font-bold text-white mt-1">Sinus & Cosinus am Einheitskreis</h2>
+                    </div>
+                    <div class="text-xs text-slate-400 bg-cyber-darker p-2 rounded border border-slate-700">
+                        Punkt P(x|y) = <span class="text-cyber-neonCyan">P(cos α | sin α)</span>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+                    <!-- Left Side: Interactive SVG Unit Circle -->
+                    <div class="lg:col-span-6 bg-cyber-darker p-4 rounded-xl border border-slate-800 flex flex-col items-center justify-center relative">
+                        <h3 class="text-xs text-cyber-neonCyan mb-2 font-semibold">INTERAKTIVES RADAR-DISPLAY (EINHEITSKREIS)</h3>
+                        
+                        <!-- SVG Unit Circle -->
+                        <div class="w-full max-w-[340px] aspect-square relative">
+                            <svg id="unitCircleSvg" viewBox="-130 -130 260 260" class="w-full h-full">
+                                <!-- Grid Lines -->
+                                <line x1="-120" y1="0" x2="120" y2="0" stroke="#334155" stroke-width="1.5" stroke-dasharray="4"/>
+                                <line x1="0" y1="-120" x2="0" y2="120" stroke="#334155" stroke-width="1.5" stroke-dasharray="4"/>
+                                
+                                <!-- Unit Circle -->
+                                <circle cx="0" cy="0" r="100" fill="none" stroke="#00f0ff" stroke-width="2" class="opacity-60"/>
+                                
+                                <!-- Angle Arc Dynamic -->
+                                <path id="svgAngleArc" d="M 25 0 A 25 25 0 0 0 25 0 L 0 0 Z" fill="rgba(0, 255, 102, 0.2)" stroke="#00ff66" stroke-width="1"/>
+
+                                <!-- Cosine Line (x-axis proj) -->
+                                <line id="svgCosLine" x1="0" y1="0" x2="100" y2="0" stroke="#00f0ff" stroke-width="3"/>
+
+                                <!-- Sine Line (vertical proj) -->
+                                <line id="svgSinLine" x1="100" y1="0" x2="100" y2="0" stroke="#ff0055" stroke-width="3"/>
+
+                                <!-- Hypotenuse / Radius -->
+                                <line id="svgRadiusLine" x1="0" y1="0" x2="100" y2="0" stroke="#ffcc00" stroke-width="2"/>
+
+                                <!-- Point P -->
+                                <circle id="svgPointP" cx="100" cy="0" r="6" fill="#00ff66" stroke="#ffffff" stroke-width="2" class="cursor-pointer"/>
+
+                                <!-- Axis Labels -->
+                                <text x="110" y="15" fill="#00f0ff" font-size="10" font-weight="bold">x (cos)</text>
+                                <text x="5" y="-110" fill="#ff0055" font-size="10" font-weight="bold">y (sin)</text>
+                            </svg>
+                        </div>
+
+                        <!-- Dynamic Angle Selector Controls -->
+                        <div class="w-full mt-4 flex flex-wrap justify-center gap-2">
+                            <button onclick="setCircleAngle(0)" class="angle-btn px-2.5 py-1 text-xs rounded bg-cyber-panel border border-slate-700 hover:border-cyber-neonGreen">0°</button>
+                            <button onclick="setCircleAngle(30)" class="angle-btn px-2.5 py-1 text-xs rounded bg-cyber-panel border border-slate-700 hover:border-cyber-neonGreen">30°</button>
+                            <button onclick="setCircleAngle(45)" class="angle-btn px-2.5 py-1 text-xs rounded bg-cyber-panel border border-slate-700 hover:border-cyber-neonGreen">45°</button>
+                            <button onclick="setCircleAngle(60)" class="angle-btn px-2.5 py-1 text-xs rounded bg-cyber-panel border border-slate-700 hover:border-cyber-neonGreen">60°</button>
+                            <button onclick="setCircleAngle(90)" class="angle-btn px-2.5 py-1 text-xs rounded bg-cyber-panel border border-slate-700 hover:border-cyber-neonGreen">90°</button>
+                            <button onclick="setCircleAngle(180)" class="angle-btn px-2.5 py-1 text-xs rounded bg-cyber-panel border border-slate-700 hover:border-cyber-neonGreen">180°</button>
+                            <button onclick="setCircleAngle(270)" class="angle-btn px-2.5 py-1 text-xs rounded bg-cyber-panel border border-slate-700 hover:border-cyber-neonGreen">270°</button>
+                        </div>
+                        <div class="mt-2 text-xs text-center text-slate-400">
+                            Aktueller Winkel α: <span id="currentAngleDisplay" class="text-cyber-neonYellow font-bold">0°</span> | 
+                            cos(α) = <span id="currentCosDisplay" class="text-cyber-neonCyan font-bold">1</span> | 
+                            sin(α) = <span id="currentSinDisplay" class="text-cyber-neonRed font-bold">0</span>
+                        </div>
+                    </div>
+
+                    <!-- Right Side: Challenge Questions -->
+                    <div class="lg:col-span-6 space-y-4">
+                        <div class="bg-cyber-darker p-4 rounded-lg border border-slate-800">
+                            <h4 class="text-sm font-bold text-cyber-neonGreen mb-2">Aufgabenstellung:</h4>
+                            <p class="text-xs text-slate-300 leading-relaxed">
+                                Bestimme die korrekten Funktionswerte von Sinus und Cosinus für die angegebenen Winkel am Einheitskreis. Nutze bei Bedarf das interaktive Radar-Display links als Hilfe!
+                            </p>
+                        </div>
+
+                        <!-- 4 Questions -->
+                        <div id="p2Questions" class="space-y-3">
+                            <!-- JS populated questions -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Puzzle 2 Action Footer -->
+                <div class="flex flex-col sm:flex-row justify-between items-center gap-4 pt-4 border-t border-cyber-neonCyan/20">
+                    <div id="p2Feedback" class="text-sm font-semibold text-slate-400">
+                        Wähle für alle 4 Fragen die exakten Trigonometrie-Werte.
+                    </div>
+                    <button onclick="verifyPuzzle2()" class="w-full sm:w-auto px-6 py-3 bg-cyber-neonGreen/20 hover:bg-cyber-neonGreen/40 text-cyber-neonGreen border border-cyber-neonGreen rounded-lg font-bold transition flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-shield-halved"></i> KOORDINATEN BESTÄTIGEN
+                    </button>
+                </div>
+            </div>
+
+            <!-- RÄTSEL 3: Quadranten & Vorzeichen -->
+            <div id="puzzle3" class="cyber-tab-content hidden bg-cyber-panel rounded-xl p-6 border border-cyber-neonCyan/40 neon-box-cyan flex flex-col gap-6">
+                <div class="flex flex-col md:flex-row justify-between md:items-center border-b border-cyber-neonCyan/20 pb-4 gap-2">
+                    <div>
+                        <span class="text-xs bg-cyber-neonYellow/20 text-cyber-neonYellow px-2 py-1 rounded">LEVEL 3 // QUADRANT_LOGIC</span>
+                        <h2 class="text-2xl font-bold text-white mt-1">Periodizität & Vorzeichen-Analyse</h2>
+                    </div>
+                    <div class="text-xs text-slate-400 bg-cyber-darker p-2 rounded border border-slate-700">
+                        Quadranten I, II, III, IV (gegen den Uhrzeigersinn)
+                    </div>
+                </div>
+
+                <p class="text-slate-300 text-sm">
+                    Hacker Zero-Cool hat die Sicherheitsabfrage durch logische Bedingungen zu den Vorzeichen von Sinus und Cosinus sowie deren Periodizität geschützt. Beantworte alle 3 Fachfragen korrekt, um die finale <span class="text-cyber-neonYellow font-bold">Ziffer 3</span> zu entschlüsseln.
+                </p>
+
+                <div id="p3QuestionsContainer" class="space-y-6">
+                    <!-- JS populated multiple choice questions -->
+                </div>
+
+                <!-- Puzzle 3 Action Footer -->
+                <div class="flex flex-col sm:flex-row justify-between items-center gap-4 pt-4 border-t border-cyber-neonCyan/20">
+                    <div id="p3Feedback" class="text-sm font-semibold text-slate-400">
+                        Wähle für jede Aussage die mathematisch richtige Antwort.
+                    </div>
+                    <button onclick="verifyPuzzle3()" class="w-full sm:w-auto px-6 py-3 bg-cyber-neonYellow/20 hover:bg-cyber-neonYellow/40 text-cyber-neonYellow border border-cyber-neonYellow rounded-lg font-bold transition flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-terminal"></i> LOGIK ANALYSIEREN
+                    </button>
+                </div>
+            </div>
+
+            <!-- FINALES TOR / TÜRSCHLOSS TERMINAL -->
+            <div id="puzzle4" class="cyber-tab-content hidden bg-cyber-panel rounded-xl p-6 border border-cyber-neonCyan/40 neon-box-cyan flex flex-col gap-6">
+                <div class="border-b border-cyber-neonCyan/20 pb-4">
+                    <span class="text-xs bg-cyber-neonRed/20 text-cyber-neonRed px-2 py-1 rounded">MAIN_SAFE // ACCESS_LOCK</span>
+                    <h2 class="text-2xl font-bold text-white mt-1">Digitaler Tresor & Türschloss</h2>
+                </div>
+
+                <!-- Keypad & Lock Interface -->
+                <div class="grid grid-cols-1 md:grid-cols-12 gap-8 items-center">
+                    
+                    <!-- Left: Freigeschaltete Hinweise & Code Status -->
+                    <div class="md:col-span-5 bg-cyber-darker p-5 rounded-xl border border-slate-800 flex flex-col gap-4">
+                        <h3 class="text-sm font-bold text-cyber-neonCyan uppercase tracking-wide">Freigeschaltete Code-Ziffern:</h3>
+
+                        <div class="space-y-3">
+                            <div class="p-3 bg-cyber-panel rounded border border-slate-700 flex justify-between items-center">
+                                <span class="text-xs text-slate-300">Ziffer 1 (aus Rätsel 1):</span>
+                                <span id="safeDigitHint1" class="text-lg font-bold text-cyber-neonYellow">LOCKED [?]</span>
+                            </div>
+                            <div class="p-3 bg-cyber-panel rounded border border-slate-700 flex justify-between items-center">
+                                <span class="text-xs text-slate-300">Ziffer 2 (aus Rätsel 2):</span>
+                                <span id="safeDigitHint2" class="text-lg font-bold text-cyber-neonYellow">LOCKED [?]</span>
+                            </div>
+                            <div class="p-3 bg-cyber-panel rounded border border-slate-700 flex justify-between items-center">
+                                <span class="text-xs text-slate-300">Ziffer 3 (aus Rätsel 3):</span>
+                                <span id="safeDigitHint3" class="text-lg font-bold text-cyber-neonYellow">LOCKED [?]</span>
+                            </div>
+                        </div>
+
+                        <p class="text-xs text-slate-400 italic">
+                            Hinweis: Falls du den Code noch nicht hast, löse die jeweiligen Rätsel in den oberen Tabs!
+                        </p>
+                    </div>
+
+                    <!-- Right: Keypad / Door Display -->
+                    <div class="md:col-span-7 bg-cyber-darker p-6 rounded-xl border border-cyber-neonCyan/30 flex flex-col items-center gap-6">
+                        
+                        <!-- Safe Screen Display -->
+                        <div class="w-full max-w-xs bg-black p-4 rounded-lg border-2 border-cyber-neonCyan text-center shadow-[0_0_15px_rgba(0,240,255,0.3)]">
+                            <div class="text-xs text-cyber-neonCyan/70 uppercase tracking-widest mb-1">ENTER 3-DIGIT PASSCODE</div>
+                            <div id="safeDisplay" class="text-4xl font-bold text-cyber-neonGreen tracking-widest font-mono">
+                                _ _ _
+                            </div>
+                        </div>
+
+                        <!-- Keypad Matrix -->
+                        <div class="grid grid-cols-3 gap-3 w-full max-w-xs">
+                            <button onclick="pressKey('1')" class="py-3 bg-cyber-panel hover:bg-cyber-neonCyan/20 text-white font-bold rounded-lg border border-slate-700 hover:border-cyber-neonCyan transition">1</button>
+                            <button onclick="pressKey('2')" class="py-3 bg-cyber-panel hover:bg-cyber-neonCyan/20 text-white font-bold rounded-lg border border-slate-700 hover:border-cyber-neonCyan transition">2</button>
+                            <button onclick="pressKey('3')" class="py-3 bg-cyber-panel hover:bg-cyber-neonCyan/20 text-white font-bold rounded-lg border border-slate-700 hover:border-cyber-neonCyan transition">3</button>
+                            <button onclick="pressKey('4')" class="py-3 bg-cyber-panel hover:bg-cyber-neonCyan/20 text-white font-bold rounded-lg border border-slate-700 hover:border-cyber-neonCyan transition">4</button>
+                            <button onclick="pressKey('5')" class="py-3 bg-cyber-panel hover:bg-cyber-neonCyan/20 text-white font-bold rounded-lg border border-slate-700 hover:border-cyber-neonCyan transition">5</button>
+                            <button onclick="pressKey('6')" class="py-3 bg-cyber-panel hover:bg-cyber-neonCyan/20 text-white font-bold rounded-lg border border-slate-700 hover:border-cyber-neonCyan transition">6</button>
+                            <button onclick="pressKey('7')" class="py-3 bg-cyber-panel hover:bg-cyber-neonCyan/20 text-white font-bold rounded-lg border border-slate-700 hover:border-cyber-neonCyan transition">7</button>
+                            <button onclick="pressKey('8')" class="py-3 bg-cyber-panel hover:bg-cyber-neonCyan/20 text-white font-bold rounded-lg border border-slate-700 hover:border-cyber-neonCyan transition">8</button>
+                            <button onclick="pressKey('9')" class="py-3 bg-cyber-panel hover:bg-cyber-neonCyan/20 text-white font-bold rounded-lg border border-slate-700 hover:border-cyber-neonCyan transition">9</button>
+                            <button onclick="pressKey('clear')" class="py-3 bg-cyber-neonRed/20 hover:bg-cyber-neonRed/40 text-cyber-neonRed font-bold rounded-lg border border-cyber-neonRed transition">C</button>
+                            <button onclick="pressKey('0')" class="py-3 bg-cyber-panel hover:bg-cyber-neonCyan/20 text-white font-bold rounded-lg border border-slate-700 hover:border-cyber-neonCyan transition">0</button>
+                            <button onclick="submitSafeCode()" class="py-3 bg-cyber-neonGreen/20 hover:bg-cyber-neonGreen/40 text-cyber-neonGreen font-bold rounded-lg border border-cyber-neonGreen transition"><i class="fa-solid fa-unlock"></i></button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VICTORY SCREEN / MATH SUMMARY (Hidden initially) -->
+            <div id="victoryScreen" class="hidden bg-cyber-panel rounded-xl p-8 border-2 border-cyber-neonGreen neon-box-green flex flex-col gap-6">
+                <div class="text-center space-y-2 border-b border-cyber-neonGreen/30 pb-6">
+                    <div class="inline-block p-4 rounded-full bg-cyber-neonGreen/10 border border-cyber-neonGreen text-cyber-neonGreen text-4xl mb-2 animate-bounce">
+                        <i class="fa-solid fa-door-open"></i>
+                    </div>
+                    <h2 class="text-3xl font-extrabold text-cyber-neonGreen tracking-wider neon-glow-green">SYSTEM OVERRIDDEN // ZUGANG GEWÄHRT!</h2>
+                    <p class="text-slate-300 max-w-xl mx-auto text-sm">
+                        Hervorragende Arbeit! Du hast alle Sicherheitssperren von Zero-Cool durchbrochen und das Türschloss entriegelt. Das Büro ist geöffnet!
+                    </p>
+                </div>
+
+                <!-- Mathematical Cheat Sheet / Summary -->
+                <div class="space-y-4">
+                    <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-book-bookmark text-cyber-neonCyan"></i>
+                        Zusammenfassung: Grundlagen der Trigonometrie
+                    </h3>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <!-- Summary Card 1 -->
+                        <div class="bg-cyber-darker p-4 rounded-lg border border-slate-800 space-y-2">
+                            <h4 class="font-bold text-cyber-neonCyan text-sm">1. Grad- und Bogenmaß</h4>
+                            <p class="text-xs text-slate-300 leading-relaxed">
+                                Der Vollkreis hat <span class="text-cyber-neonGreen font-semibold">360° = 2π rad</span>.
+                            </p>
+                            <div class="text-xs bg-cyber-panel p-2 rounded text-slate-400 font-mono">
+                                • 180° = π<br>
+                                • 90° = π/2<br>
+                                • 60° = π/3<br>
+                                • 45° = π/4<br>
+                                • 30° = π/6
+                            </div>
+                        </div>
+
+                        <!-- Summary Card 2 -->
+                        <div class="bg-cyber-darker p-4 rounded-lg border border-slate-800 space-y-2">
+                            <h4 class="font-bold text-cyber-neonGreen text-sm">2. Am Einheitskreis (r = 1)</h4>
+                            <p class="text-xs text-slate-300 leading-relaxed">
+                                Jeder Punkt P auf dem Einheitskreis hat die Koordinaten:
+                            </p>
+                            <div class="text-xs bg-cyber-panel p-2 rounded text-cyber-neonCyan font-mono">
+                                P(x | y) = (cos α | sin α)
+                            </div>
+                            <p class="text-xs text-slate-400">
+                                <span class="text-cyber-neonCyan">cos(α)</span> = Ankathete (x-Achse)<br>
+                                <span class="text-cyber-neonRed">sin(α)</span> = Gegenkathete (y-Achse)
+                            </p>
+                        </div>
+
+                        <!-- Summary Card 3 -->
+                        <div class="bg-cyber-darker p-4 rounded-lg border border-slate-800 space-y-2">
+                            <h4 class="font-bold text-cyber-neonYellow text-sm">3. Vorzeichen & Periodizität</h4>
+                            <p class="text-xs text-slate-300 leading-relaxed">
+                                Beide Funktionen haben eine Periode von <span class="text-cyber-neonGreen font-semibold">360° (2π)</span>:
+                            </p>
+                            <div class="text-xs bg-cyber-panel p-2 rounded text-slate-400 font-mono">
+                                sin(α + 360°) = sin(α)<br>
+                                cos(α + 360°) = cos(α)
+                            </div>
+                            <p class="text-xs text-slate-400">
+                                Im I. Quadranten sind sin & cos positiv. Im III. Quadranten sind beide negativ.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Reset Button -->
+                <div class="text-center pt-4 border-t border-slate-800">
+                    <button onclick="resetEscapeRoom()" class="px-6 py-2.5 bg-cyber-panel hover:bg-cyber-darker text-slate-300 border border-slate-700 rounded-lg text-xs font-semibold transition">
+                        <i class="fa-solid fa-rotate-right mr-1"></i> Escape Room Neustarten
+                    </button>
+                </div>
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="w-full border-t border-cyber-neonCyan/20 bg-cyber-darker/80 p-4 text-center text-xs text-slate-500 relative z-10">
+        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-2">
+            <span>ESCAPE ROOM // MATHE-UNTERRICHT EDITION</span>
+            <span class="text-cyber-neonCyan/60">Designed for Interactive Trigonometry Learning</span>
+        </div>
+    </footer>
+
+    <!-- JavaScript Logic -->
+    <script>
+        // --- GAME STATE ---
+        const gameState = {
+            unlockedDigits: {
+                digit1: null, // Correct: 7
+                digit2: null, // Correct: 3
+                digit3: null  // Correct: 9
+            },
+            solutionCode: "739",
+            soundEnabled: false,
+            currentTab: 1,
+            // Puzzle 1 State
+            p1SelectedDeg: null,
+            p1Matches: {}, // degId -> radId
+            // Puzzle 4 Keypad State
+            enteredCode: ""
+        };
+
+        // --- WEB AUDIO SYNTHESIZER FOR CYBER SOUNDS ---
+        let audioCtx = null;
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+
+        function toggleAudio() {
+            initAudio();
+            gameState.soundEnabled = !gameState.soundEnabled;
+            const soundIcon = document.getElementById('soundIcon');
+            const soundText = document.getElementById('soundText');
+
+            if (gameState.soundEnabled) {
+                soundIcon.className = "fa-solid fa-volume-high text-cyber-neonGreen";
+                soundText.innerText = "SOUND: ON";
+                playBeep(880, 0.1, 'sine');
+            } else {
+                soundIcon.className = "fa-solid fa-volume-xmark";
+                soundText.innerText = "SOUND: OFF";
+            }
+        }
+
+        function playBeep(freq = 440, duration = 0.08, type = 'sine') {
+            if (!gameState.soundEnabled || !audioCtx) return;
+            try {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = type;
+                osc.frequency.value = freq;
+                gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + duration);
+            } catch (e) {
+                console.error("Audio error", e);
+            }
+        }
+
+        function playSuccessSound() {
+            if (!gameState.soundEnabled || !audioCtx) return;
+            playBeep(523.25, 0.1, 'triangle');
+            setTimeout(() => playBeep(659.25, 0.1, 'triangle'), 100);
+            setTimeout(() => playBeep(783.99, 0.2, 'triangle'), 200);
+        }
+
+        function playErrorSound() {
+            if (!gameState.soundEnabled || !audioCtx) return;
+            playBeep(200, 0.15, 'sawtooth');
+            setTimeout(() => playBeep(150, 0.2, 'sawtooth'), 120);
+        }
+
+
+        // --- TAB NAVIGATION ---
+        function switchTab(tabNum) {
+            playBeep(600, 0.04);
+            gameState.currentTab = tabNum;
+
+            // Hide all tab content
+            document.querySelectorAll('.cyber-tab-content').forEach(el => el.classList.add('hidden'));
+
+            // Show targeted tab or victory screen
+            if (tabNum === 5) {
+                document.getElementById('victoryScreen').classList.remove('hidden');
+            } else {
+                document.getElementById(`puzzle${tabNum}`).classList.remove('hidden');
+            }
+
+            // Update tab button styles
+            for (let i = 1; i <= 4; i++) {
+                const btn = document.getElementById(`tabBtn${i}`);
+                if (i === tabNum) {
+                    btn.className = "p-3 text-left rounded-lg bg-cyber-panel border border-cyber-neonCyan text-cyber-neonCyan flex items-center justify-between transition";
+                } else {
+                    btn.className = "p-3 text-left rounded-lg bg-cyber-panel border border-slate-800 text-slate-500 flex items-center justify-between transition hover:bg-cyber-darker";
+                }
+            }
+        }
+
+        function dismissStory() {
+            playBeep(400, 0.05);
+            document.getElementById('storyBanner').style.display = 'none';
+        }
+
+
+        // --- DATA & INITIALIZATION FOR PUZZLE 1 ---
+        const puzzle1Pairs = [
+            { id: 'p1_1', deg: '180°', rad: 'π' },
+            { id: 'p1_2', deg: '90°', rad: 'π/2' },
+            { id: 'p1_3', deg: '60°', rad: 'π/3' },
+            { id: 'p1_4', deg: '45°', rad: 'π/4' },
+            { id: 'p1_5', deg: '270°', rad: '3π/2' }
+        ];
+
+        function initPuzzle1() {
+            const degContainer = document.getElementById('degContainer');
+            const radContainer = document.getElementById('radContainer');
+
+            degContainer.innerHTML = '';
+            radContainer.innerHTML = '';
+
+            // Shuffle Rad options for randomness
+            const shuffledRad = [...puzzle1Pairs].sort(() => Math.random() - 0.5);
+
+            puzzle1Pairs.forEach(item => {
+                const btn = document.createElement('button');
+                btn.id = `deg_${item.id}`;
+                btn.className = "deg-btn w-full p-3 bg-cyber-darker hover:bg-cyber-panel text-slate-200 border border-slate-700 rounded-lg text-left flex justify-between items-center transition";
+                btn.onclick = () => selectP1Deg(item.id);
+                btn.innerHTML = `
+                    <span class="font-bold text-sm">${item.deg}</span>
+                    <span id="degLabel_${item.id}" class="text-xs text-cyber-neonYellow">-> Wähle Ziel</span>
+                `;
+                degContainer.appendChild(btn);
+            });
+
+            shuffledRad.forEach(item => {
+                const btn = document.createElement('button');
+                btn.id = `rad_${item.id}`;
+                btn.className = "rad-btn p-3 bg-cyber-darker hover:bg-cyber-panel text-cyber-neonCyan border border-slate-700 rounded-lg text-center font-bold text-sm transition";
+                btn.onclick = () => selectP1Rad(item.id, item.rad);
+                btn.innerText = item.rad;
+                radContainer.appendChild(btn);
+            });
+        }
+
+        function selectP1Deg(id) {
+            playBeep(500, 0.05);
+            gameState.p1SelectedDeg = id;
+
+            // Highlight selected deg button
+            document.querySelectorAll('.deg-btn').forEach(b => b.classList.remove('border-cyber-neonCyan', 'bg-cyber-panel'));
+            const selectedBtn = document.getElementById(`deg_${id}`);
+            selectedBtn.classList.add('border-cyber-neonCyan', 'bg-cyber-panel');
+        }
+
+        function selectP1Rad(radId, radVal) {
+            if (!gameState.p1SelectedDeg) {
+                playErrorSound();
+                alert("Bitte wähle zuerst einen Grad-Wert auf der linken Seite!");
+                return;
+            }
+
+            playBeep(650, 0.05);
+            const degId = gameState.p1SelectedDeg;
+            gameState.p1Matches[degId] = radId;
+
+            // Update UI label
+            const label = document.getElementById(`degLabel_${degId}`);
+            label.innerText = `= ${radVal}`;
+            label.className = "text-xs font-bold text-cyber-neonGreen";
+
+            // Reset selection state
+            document.querySelectorAll('.deg-btn').forEach(b => b.classList.remove('border-cyber-neonCyan', 'bg-cyber-panel'));
+            gameState.p1SelectedDeg = null;
+        }
+
+        function verifyPuzzle1() {
+            let correctCount = 0;
+            puzzle1Pairs.forEach(pair => {
+                if (gameState.p1Matches[pair.id] === pair.id) {
+                    correctCount++;
+                }
+            });
+
+            const feedback = document.getElementById('p1Feedback');
+
+            if (correctCount === puzzle1Pairs.length) {
+                playSuccessSound();
+                feedback.className = "text-sm font-bold text-cyber-neonGreen";
+                feedback.innerHTML = `<i class="fa-solid fa-circle-check"></i> EXZELLENT! Ziffer 1 freigeschaltet: <span class="text-cyber-neonYellow text-lg">7</span>`;
+                
+                unlockDigit(1, '7');
+                document.getElementById('tabIcon1').className = "fa-solid fa-circle-check text-cyber-neonGreen";
+            } else {
+                playErrorSound();
+                feedback.className = "text-sm font-bold text-cyber-neonRed";
+                feedback.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> FEHLER: ${correctCount} von ${puzzle1Pairs.length} richtig. Überprüfe die Umrechnung!`;
+            }
+        }
+
+
+        // --- PUZZLE 2: SVG UNIT CIRCLE & QUESTIONS ---
+        const puzzle2QuestionsData = [
+            { id: 'p2_q1', text: '1. Welchen Wert hat sin(90°)?', options: ['0', '1', '-1', '0.5'], correct: '1' },
+            { id: 'p2_q2', text: '2. Welchen Wert hat cos(180°)?', options: ['1', '0', '-1', '-0.5'], correct: '-1' },
+            { id: 'p2_q3', text: '3. Welchen Wert hat cos(60°)?', options: ['0.5', '0.866 (√3/2)', '0', '1'], correct: '0.5' },
+            { id: 'p2_q4', text: '4. Welchen Wert hat sin(30°)?', options: ['1', '0.866', '0.5', '0'], correct: '0.5' }
+        ];
+
+        function initPuzzle2() {
+            const container = document.getElementById('p2Questions');
+            container.innerHTML = '';
+
+            puzzle2QuestionsData.forEach(q => {
+                const box = document.createElement('div');
+                box.className = "bg-cyber-darker p-3 rounded border border-slate-800 space-y-2";
+                
+                let optionsHtml = q.options.map(opt => `
+                    <label class="flex items-center gap-2 text-xs text-slate-300 cursor-pointer hover:text-white">
+                        <input type="radio" name="${q.id}" value="${opt}" class="accent-cyber-neonGreen">
+                        <span>${opt}</span>
+                    </label>
+                `).join('');
+
+                box.innerHTML = `
+                    <div class="text-xs font-bold text-cyber-neonCyan">${q.text}</div>
+                    <div class="grid grid-cols-2 gap-2 pt-1">
+                        ${optionsHtml}
+                    </div>
+                `;
+                container.appendChild(box);
+            });
+
+            // Set initial angle on circle
+            setCircleAngle(0);
+        }
+
+        function setCircleAngle(deg) {
+            playBeep(700, 0.04);
+            const rad = deg * (Math.PI / 180);
+            
+            // SVG Coordinates (r = 100px)
+            const cx = 100 * Math.cos(rad);
+            const cy = -100 * Math.sin(rad); // negative because SVG y-axis is inverted
+
+            // Update SVG elements
+            document.getElementById('svgCosLine').setAttribute('x2', cx);
+            document.getElementById('svgCosLine').setAttribute('y2', 0);
+
+            document.getElementById('svgSinLine').setAttribute('x1', cx);
+            document.getElementById('svgSinLine').setAttribute('y1', 0);
+            document.getElementById('svgSinLine').setAttribute('x2', cx);
+            document.getElementById('svgSinLine').setAttribute('y2', cy);
+
+            document.getElementById('svgRadiusLine').setAttribute('x2', cx);
+            document.getElementById('svgRadiusLine').setAttribute('y2', cy);
+
+            document.getElementById('svgPointP').setAttribute('cx', cx);
+            document.getElementById('svgPointP').setAttribute('cy', cy);
+
+            // Angle arc path
+            const largeArc = deg > 180 ? 1 : 0;
+            const sweep = 0; // counterclockwise in SVG space
+            const arcX = 25 * Math.cos(rad);
+            const arcY = -25 * Math.sin(rad);
+            
+            if (deg === 0) {
+                document.getElementById('svgAngleArc').setAttribute('d', 'M 0 0');
+            } else {
+                document.getElementById('svgAngleArc').setAttribute('d', `M 0 0 L 25 0 A 25 25 0 ${largeArc} ${sweep} ${arcX} ${arcY} Z`);
+            }
+
+            // Text values rounded
+            const cosVal = Math.round(Math.cos(rad) * 1000) / 1000;
+            const sinVal = Math.round(Math.sin(rad) * 1000) / 1000;
+
+            document.getElementById('currentAngleDisplay').innerText = `${deg}°`;
+            document.getElementById('currentCosDisplay').innerText = cosVal;
+            document.getElementById('currentSinDisplay').innerText = sinVal;
+        }
+
+        function verifyPuzzle2() {
+            let allCorrect = true;
+
+            puzzle2QuestionsData.forEach(q => {
+                const selected = document.querySelector(`input[name="${q.id}"]:checked`);
+                if (!selected || selected.value !== q.correct) {
+                    allCorrect = false;
+                }
+            });
+
+            const feedback = document.getElementById('p2Feedback');
+
+            if (allCorrect) {
+                playSuccessSound();
+                feedback.className = "text-sm font-bold text-cyber-neonGreen";
+                feedback.innerHTML = `<i class="fa-solid fa-circle-check"></i> KOORDINATEN VERIFIZIERT! Ziffer 2 freigeschaltet: <span class="text-cyber-neonYellow text-lg">3</span>`;
+                
+                unlockDigit(2, '3');
+                document.getElementById('tabIcon2').className = "fa-solid fa-circle-check text-cyber-neonGreen";
+            } else {
+                playErrorSound();
+                feedback.className = "text-sm font-bold text-cyber-neonRed";
+                feedback.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> ABWEICHUNG DETEKTIERT! Überprüfe deine Werte am Einheitskreis.`;
+            }
+        }
+
+
+        // --- PUZZLE 3: PERIODICITY & QUADRANTS ---
+        const puzzle3Data = [
+            {
+                id: 'p3_q1',
+                question: '1. In welchem Quadranten sind SOWOHL sin(α) als auch cos(α) NEGATIV?',
+                options: ['Quadrant I', 'Quadrant II', 'Quadrant III', 'Quadrant IV'],
+                correct: 'Quadrant III'
+            },
+            {
+                id: 'p3_q2',
+                question: '2. Die Sinusfunktion ist periodisch. Welcher Ausdruck ist identisch zu sin(α)?',
+                options: ['sin(α + 180°)', 'sin(α + 360°)', 'cos(α + 360°)', 'sin(α + 90°)'],
+                correct: 'sin(α + 360°)'
+            },
+            {
+                id: 'p3_q3',
+                question: '3. Welches Vorzeichen hat cos(120°)? (Tipp: 120° liegt im 2. Quadranten)',
+                options: ['Positiv (+)', 'Negativ (-)', 'Immer 0', 'Undefiniert'],
+                correct: 'Negativ (-)'
+            }
+        ];
+
+        function initPuzzle3() {
+            const container = document.getElementById('p3QuestionsContainer');
+            container.innerHTML = '';
+
+            puzzle3Data.forEach((q, idx) => {
+                const card = document.createElement('div');
+                card.className = "bg-cyber-darker p-4 rounded-lg border border-slate-800 space-y-3";
+
+                let optionsHtml = q.options.map(opt => `
+                    <label class="flex items-center gap-3 p-2 bg-cyber-panel/60 rounded border border-slate-800 hover:border-cyber-neonYellow cursor-pointer transition">
+                        <input type="radio" name="${q.id}" value="${opt}" class="accent-cyber-neonYellow">
+                        <span class="text-xs text-slate-200 font-medium">${opt}</span>
+                    </label>
+                `).join('');
+
+                card.innerHTML = `
+                    <h4 class="text-sm font-bold text-cyber-neonYellow">${q.question}</h4>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        ${optionsHtml}
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function verifyPuzzle3() {
+            let correctCount = 0;
+
+            puzzle3Data.forEach(q => {
+                const selected = document.querySelector(`input[name="${q.id}"]:checked`);
+                if (selected && selected.value === q.correct) {
+                    correctCount++;
+                }
+            });
+
+            const feedback = document.getElementById('p3Feedback');
+
+            if (correctCount === puzzle3Data.length) {
+                playSuccessSound();
+                feedback.className = "text-sm font-bold text-cyber-neonGreen";
+                feedback.innerHTML = `<i class="fa-solid fa-circle-check"></i> QUADRANTEN-LOGIK AKZEPTIERT! Ziffer 3 freigeschaltet: <span class="text-cyber-neonYellow text-lg">9</span>`;
+                
+                unlockDigit(3, '9');
+                document.getElementById('tabIcon3').className = "fa-solid fa-circle-check text-cyber-neonGreen";
+            } else {
+                playErrorSound();
+                feedback.className = "text-sm font-bold text-cyber-neonRed";
+                feedback.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> ANOMALIE: Nur ${correctCount} von ${puzzle3Data.length} Aussagen korrekt.`;
+            }
+        }
+
+
+        // --- DIGIT UNLOCK MANAGEMENT ---
+        function unlockDigit(num, digitValue) {
+            gameState.unlockedDigits[`digit${num}`] = digitValue;
+
+            // Update Header status
+            document.getElementById(`codeDigit${num}`).innerText = digitValue;
+            document.getElementById(`codeDigit${num}`).className = "font-bold text-cyber-neonGreen text-lg neon-glow-green";
+
+            // Update Safe screen hints
+            const safeHintEl = document.getElementById(`safeDigitHint${num}`);
+            safeHintEl.innerText = `FREIGESCHALTET [ ${digitValue} ]`;
+            safeHintEl.className = "text-lg font-bold text-cyber-neonGreen neon-glow-green";
+
+            // Check if all tabs are solved to unlock final tab icon
+            if (gameState.unlockedDigits.digit1 && gameState.unlockedDigits.digit2 && gameState.unlockedDigits.digit3) {
+                document.getElementById('tabIcon4').className = "fa-solid fa-unlock text-cyber-neonGreen animate-pulse";
+            }
+        }
+
+
+        // --- PUZZLE 4: KEYPAD & DOOR LOCK ---
+        function pressKey(key) {
+            playBeep(800, 0.05);
+
+            if (key === 'clear') {
+                gameState.enteredCode = "";
+            } else {
+                if (gameState.enteredCode.length < 3) {
+                    gameState.enteredCode += key;
+                }
+            }
+
+            updateSafeDisplay();
+        }
+
+        function updateSafeDisplay() {
+            const display = document.getElementById('safeDisplay');
+            let text = gameState.enteredCode;
+            while (text.length < 3) {
+                text += "_";
+            }
+            display.innerText = text.split('').join(' ');
+        }
+
+        function submitSafeCode() {
+            if (gameState.enteredCode === gameState.solutionCode) {
+                playSuccessSound();
+                
+                // Switch to victory screen summary
+                switchTab(5);
+            } else {
+                playErrorSound();
+                const display = document.getElementById('safeDisplay');
+                display.innerText = "ERR";
+                display.classList.add('text-cyber-neonRed');
+
+                setTimeout(() => {
+                    display.classList.remove('text-cyber-neonRed');
+                    gameState.enteredCode = "";
+                    updateSafeDisplay();
+                }, 1000);
+            }
+        }
+
+
+        // --- GAME RESET ---
+        function resetEscapeRoom() {
+            playBeep(400, 0.1);
+            gameState.unlockedDigits.digit1 = null;
+            gameState.unlockedDigits.digit2 = null;
+            gameState.unlockedDigits.digit3 = null;
+            gameState.p1Matches = {};
+            gameState.enteredCode = "";
+
+            document.getElementById('codeDigit1').innerText = "?";
+            document.getElementById('codeDigit2').innerText = "?";
+            document.getElementById('codeDigit3').innerText = "?";
+            document.getElementById('codeDigit1').className = "font-bold text-cyber-neonYellow";
+            document.getElementById('codeDigit2').className = "font-bold text-cyber-neonYellow";
+            document.getElementById('codeDigit3').className = "font-bold text-cyber-neonYellow";
+
+            document.getElementById('safeDigitHint1').innerText = "LOCKED [?]";
+            document.getElementById('safeDigitHint2').innerText = "LOCKED [?]";
+            document.getElementById('safeDigitHint3').innerText = "LOCKED [?]";
+            document.getElementById('safeDigitHint1').className = "text-lg font-bold text-cyber-neonYellow";
+            document.getElementById('safeDigitHint2').className = "text-lg font-bold text-cyber-neonYellow";
+            document.getElementById('safeDigitHint3').className = "text-lg font-bold text-cyber-neonYellow";
+
+            document.getElementById('tabIcon1').className = "fa-solid fa-lock text-cyber-neonYellow";
+            document.getElementById('tabIcon2').className = "fa-solid fa-lock text-slate-600";
+            document.getElementById('tabIcon3').className = "fa-solid fa-lock text-slate-600";
+            document.getElementById('tabIcon4').className = "fa-solid fa-key text-slate-600";
+
+            document.getElementById('victoryScreen').classList.add('hidden');
+
+            initPuzzle1();
+            initPuzzle2();
+            initPuzzle3();
+            updateSafeDisplay();
+            switchTab(1);
+        }
+
+        // Initialize on load
+        window.onload = function() {
+            initPuzzle1();
+            initPuzzle2();
+            initPuzzle3();
+            updateSafeDisplay();
+        };
+    </script>
+</body>
+</html>
